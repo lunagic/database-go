@@ -2,12 +2,11 @@ package database_test
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"io"
 	"log"
 	"net/url"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/go-sql-driver/mysql"
@@ -43,7 +42,13 @@ func prepareTestHelper(t *testing.T, testCase PrepareTestCase) {
 }
 
 func getDockerDBAL(t *testing.T) (context.Context, *database.DBAL) {
-	var db *sql.DB
+	var db *database.DBAL
+
+	config := database.Config{
+		Username: "root",
+		Password: "secret",
+		Name:     "testingDB",
+	}
 
 	mysql.SetLogger(log.New(io.Discard, "", log.LstdFlags))
 
@@ -61,33 +66,35 @@ func getDockerDBAL(t *testing.T) (context.Context, *database.DBAL) {
 
 	// pulls an image, creates a container based on it and runs it
 	resource, err := pool.Run("mariadb", "latest", []string{
-		"MARIADB_ROOT_PASSWORD=secret",
-		"MARIADB_DATABASE=testingDB",
+		"MARIADB_ROOT_PASSWORD=" + config.Password,
+		"MARIADB_DATABASE=" + config.Name,
 	})
 	if err != nil {
 		t.Fatalf("Could not start resource: %s", err)
 	}
 
-	getHostPort := func(resource *dockertest.Resource, id string) string {
-		dockerURL := os.Getenv("DOCKER_HOST")
-		if dockerURL == "" {
-			return resource.GetHostPort(id)
-		}
-		u, err := url.Parse(dockerURL)
-		if err != nil {
-			panic(err)
-		}
-		return u.Hostname() + ":" + resource.GetPort(id)
+	dockerURL := os.Getenv("DOCKER_HOST")
+	if dockerURL == "" {
+		dockerURL = "tcp://" + resource.GetHostPort("3306/tcp")
+	}
+	u, err := url.Parse(dockerURL)
+	if err != nil {
+		panic(err)
 	}
 
-	dsn := fmt.Sprintf("root:secret@(%s)/testingDB?parseTime=true", getHostPort(resource, "3306/tcp"))
+	config.Hostname = u.Hostname()
+	config.Port = func() int {
+		i, _ := strconv.Atoi(u.Port())
+		return i
+	}()
 
 	if err := pool.Retry(func() error {
 		var err error
-		db, err = sql.Open("mysql", dsn)
+		db, err = database.NewDBAL(config, log.New(os.Stdout, "", log.LstdFlags))
 		if err != nil {
 			return err
 		}
+
 		return db.Ping()
 	}); err != nil {
 		t.Fatalf("Could not connect to database: %s", err)
@@ -101,13 +108,7 @@ func getDockerDBAL(t *testing.T) (context.Context, *database.DBAL) {
 
 	t.Log("Starting test")
 
-	ctx := context.Background()
-	dbal := database.NewDBAL(
-		db,
-		log.New(os.Stdout, "", log.LstdFlags),
-	)
-
-	return ctx, dbal
+	return context.Background(), db
 }
 
 type TestCaseForQueryGeneration struct {

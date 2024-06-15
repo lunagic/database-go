@@ -4,15 +4,44 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"reflect"
+
+	"github.com/go-sql-driver/mysql"
 )
 
-func NewDBAL(connection *sql.DB, logger *log.Logger) *DBAL {
+type Config struct {
+	Hostname string
+	Port     int
+	Username string
+	Password string
+	Name     string
+}
+
+func (c Config) DSN() string {
+	return fmt.Sprintf(
+		"%s:%s@(%s:%d)/%s?parseTime=true",
+		c.Username,
+		c.Password,
+		c.Hostname,
+		c.Port,
+		c.Name,
+	)
+}
+
+func NewDBAL(config Config, logger *log.Logger) (*DBAL, error) {
+	connection, err := sql.Open("mysql", config.DSN())
+	if err != nil {
+		return nil, err
+	}
+
+	mysql.SetLogger(log.New(io.Discard, "", log.LstdFlags))
+
 	return &DBAL{
 		connection: connection,
 		logger:     logger,
-	}
+	}, nil
 }
 
 type DBAL struct {
@@ -31,7 +60,7 @@ func (dbal *DBAL) RawSelect(
 		return err
 	}
 
-	dbal.logger.Printf("DBAL Select: %s", query)
+	dbal.logf("DBAL Select: %s", query)
 
 	rows, err := dbal.connection.Query(preparedQuery, preparedArgs...)
 	if err != nil {
@@ -102,7 +131,23 @@ func (dbal *DBAL) RawExecute(
 		return nil, err
 	}
 
-	dbal.logger.Printf("DBAL Execute: %s", preparedQuery)
+	dbal.logf("DBAL Execute: %s", query)
 
 	return dbal.connection.Exec(preparedQuery, preparedArgs...)
+}
+
+func (dbal *DBAL) Ping() error {
+	return dbal.connection.Ping()
+}
+
+func (dbal *DBAL) logf(
+	s string,
+	args ...any,
+) {
+	if dbal.logger == nil {
+		return
+	}
+
+	dbal.logger.Printf(s, args...)
+
 }

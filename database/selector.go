@@ -30,6 +30,21 @@ func WithLimitOverride(size int, offset int) QueryModifier {
 	}
 }
 
+func WithAdditionalWhere(where string, parameters map[string]any) QueryModifier {
+	return func(query Query) Query {
+		if query.Parameters == nil {
+			query.Parameters = map[string]any{}
+		}
+		query.Where += " " + where
+
+		for k, v := range parameters {
+			query.Parameters[k] = v
+		}
+
+		return query
+	}
+}
+
 func (q *Selector[T]) SelectMultiple(ctx context.Context, mods ...QueryModifier) ([]T, error) {
 	target := []T{}
 
@@ -38,7 +53,7 @@ func (q *Selector[T]) SelectMultiple(ctx context.Context, mods ...QueryModifier)
 		query = mod(query)
 	}
 
-	if err := q.connection.RawSelect(ctx, q.query.String(), query.Parameters, &target); err != nil {
+	if err := q.connection.RawSelect(ctx, query.String(), query.Parameters, &target); err != nil {
 		return nil, err
 	}
 
