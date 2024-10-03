@@ -25,9 +25,9 @@ test-go:
 lint: lint-go
 
 lint-go:
-	go get -d ./...
+	go get ./...
 	go mod tidy
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.59.1
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
 	golangci-lint run ./...
 
 ## Fix the project
