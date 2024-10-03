@@ -44,13 +44,13 @@ func prepareTestHelper(t *testing.T, testCase PrepareTestCase) {
 func getDockerDBAL(t *testing.T) (context.Context, *database.DBAL) {
 	var db *database.DBAL
 
-	config := database.Config{
+	driver := database.MySQL{
 		Username: "root",
 		Password: "secret",
 		Name:     "testingDB",
 	}
 
-	mysql.SetLogger(log.New(io.Discard, "", log.LstdFlags))
+	_ = mysql.SetLogger(log.New(io.Discard, "", log.LstdFlags))
 
 	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
 	pool, err := dockertest.NewPool("")
@@ -66,8 +66,8 @@ func getDockerDBAL(t *testing.T) (context.Context, *database.DBAL) {
 
 	// pulls an image, creates a container based on it and runs it
 	resource, err := pool.Run("mariadb", "latest", []string{
-		"MARIADB_ROOT_PASSWORD=" + config.Password,
-		"MARIADB_DATABASE=" + config.Name,
+		"MARIADB_ROOT_PASSWORD=" + driver.Password,
+		"MARIADB_DATABASE=" + driver.Name,
 	})
 	if err != nil {
 		t.Fatalf("Could not start resource: %s", err)
@@ -82,15 +82,15 @@ func getDockerDBAL(t *testing.T) (context.Context, *database.DBAL) {
 		panic(err)
 	}
 
-	config.Hostname = u.Hostname()
-	config.Port = func() int {
+	driver.Hostname = u.Hostname()
+	driver.Port = func() int {
 		i, _ := strconv.Atoi(u.Port())
 		return i
 	}()
 
 	if err := pool.Retry(func() error {
 		var err error
-		db, err = database.NewDBAL(config, log.New(os.Stdout, "", log.LstdFlags))
+		db, err = database.NewDBAL(driver, log.New(os.Stdout, "", log.LstdFlags))
 		if err != nil {
 			return err
 		}

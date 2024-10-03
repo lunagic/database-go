@@ -11,41 +11,24 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-type Config struct {
-	Hostname string
-	Port     int
-	Username string
-	Password string
-	Name     string
-}
-
-func (c Config) DSN() string {
-	return fmt.Sprintf(
-		"%s:%s@(%s:%d)/%s?parseTime=true",
-		c.Username,
-		c.Password,
-		c.Hostname,
-		c.Port,
-		c.Name,
-	)
-}
-
-func NewDBAL(config Config, logger *log.Logger) (*DBAL, error) {
-	connection, err := sql.Open("mysql", config.DSN())
+func NewDBAL(driver Driver, logger *log.Logger) (*DBAL, error) {
+	connection, err := sql.Open(driver.Driver(), driver.DSN())
 	if err != nil {
 		return nil, err
 	}
 
-	mysql.SetLogger(log.New(io.Discard, "", log.LstdFlags))
+	_ = mysql.SetLogger(log.New(io.Discard, "", log.LstdFlags))
 
 	return &DBAL{
 		connection: connection,
 		logger:     logger,
+		driver:     driver,
 	}, nil
 }
 
 type DBAL struct {
 	connection *sql.DB
+	driver     Driver
 	logger     *log.Logger
 }
 

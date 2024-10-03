@@ -5,7 +5,7 @@ import (
 )
 
 func NewRepository[ID ~uint64, T Entity](dbal *DBAL) Repository[ID, T] {
-	query, err := GenerateSelect(*new(T))
+	query, err := dbal.driver.GenerateSelect(*new(T))
 	if err != nil {
 		panic(err)
 	}
@@ -22,7 +22,7 @@ type Repository[ID ~uint64, T Entity] struct {
 }
 
 func (q *Repository[ID, T]) Insert(ctx context.Context, entity T) (ID, error) {
-	statement, parameters, err := GenerateInsert(entity)
+	statement, parameters, err := q.dbal.driver.GenerateInsert(entity)
 	if err != nil {
 		return 0, err
 	}
@@ -41,7 +41,7 @@ func (q *Repository[ID, T]) Insert(ctx context.Context, entity T) (ID, error) {
 }
 
 func (q *Repository[ID, T]) Update(ctx context.Context, entity T) error {
-	statement, parameters, err := GenerateUpdate(entity)
+	statement, parameters, err := q.dbal.driver.GenerateUpdate(entity)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (q *Repository[ID, T]) Update(ctx context.Context, entity T) error {
 }
 
 func (q *Repository[ID, T]) Save(ctx context.Context, entity T) error {
-	statement, parameters, err := GenerateSave(entity)
+	statement, parameters, err := q.dbal.driver.GenerateSave(entity)
 	if err != nil {
 		return err
 	}
