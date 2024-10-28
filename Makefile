@@ -20,7 +20,7 @@ lint-npm:
 	npm run lint
 
 lint-go:
-	go get -d ./...
+	go get ./...
 	go mod tidy
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55
 
