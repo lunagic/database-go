@@ -1,0 +1,17 @@
+# System
+.DS_Store
+
+# Temporary
+/.stencil/tmp/
+
+# Secrets
+/.env*local
+
+# Go
+__debug_bin
+
+# Node
+/node_modules/
+tsconfig.tsbuildinfo
+next-env.d.ts
+.next

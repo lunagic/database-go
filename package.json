@@ -1,0 +1,12 @@
+{
+	"devDependencies": {
+		"cspell": "8.15.4",
+		"prettier": "3.3.3"
+	},
+	"private": true,
+	"scripts": {
+		"fix": "prettier --write .",
+		"lint": "cspell --gitignore . && prettier --check .",
+		"test": "echo \"no test specified\""
+	}
+}

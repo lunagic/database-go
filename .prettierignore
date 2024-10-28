@@ -1,0 +1,7 @@
+# Defaults
+/node_modules/
+*.js
+*.jsx
+*.ts
+*.tsx
+.next
