@@ -64,7 +64,7 @@ func getDockerDBAL(
 
 	if err := pool.Retry(func() error {
 		var err error
-		db, err = database.NewDBAL(driverGetter(u.Hostname(), port), database.WithLogger(log.New(os.Stdout, "", log.LstdFlags)))
+		db, err = database.NewDBAL(driverGetter(u.Hostname(), port), database.WithLogger(log.New(os.Stderr, "", log.LstdFlags)))
 		if err != nil {
 			return err
 		}

@@ -1,10 +1,27 @@
 package database
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
 )
+
+func dd(v any) {
+	dump(v)
+	os.Exit(22)
+}
+
+func dump(v any) {
+	b, err := json.MarshalIndent(v, "", "\t")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(b))
+}
 
 func loopOverStructFields(value reflect.Value, fieldHandler func(fieldDefinition reflect.StructField, fieldValue reflect.Value)) {
 	if value.Kind() == reflect.Pointer {
@@ -30,9 +47,11 @@ func loopOverStructFields(value reflect.Value, fieldHandler func(fieldDefinition
 }
 
 type dbalTag struct {
-	Column     string
-	PrimaryKey bool
-	ReadOnly   bool
+	Column                  string
+	AutoIncrementPrimaryKey bool
+	ReadOnly                bool
+	AutoIncrement           bool
+	PrimaryKey              bool
 }
 
 func parseTag(tagString reflect.StructTag) dbalTag {
@@ -54,6 +73,12 @@ func parseTag(tagString reflect.StructTag) dbalTag {
 
 		if part == "primaryKey" {
 			tag.PrimaryKey = true
+
+			continue
+		}
+
+		if part == "autoIncrement" {
+			tag.AutoIncrement = true
 
 			continue
 		}

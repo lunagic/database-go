@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/lunagic/database-go/database"
-	"github.com/stretchr/testify/assert"
+	"gotest.tools/v3/assert"
 )
 
 type UserID uint64
 
 type User1 struct {
-	ID        UserID    `db:"id,primaryKey"`
-	Name      string    `db:"name"`
-	UpdatedAt time.Time `db:"updated_at,readOnly"`
+	ID        UserID     `db:"id,primaryKey,autoIncrement"`
+	Name      string     `db:"name"`
+	UpdatedAt *time.Time `db:"updated_at,readOnly"`
 }
 
 func (u User1) EntityInformation() database.EntityInformation {
@@ -40,21 +40,19 @@ func runDriverTestSuite(t *testing.T, dbal *database.DBAL) {
 		Repository: database.NewRepository[UserID, User1](dbal),
 	}
 
-	createdUserID, err := userRepository.Insert(ctx, User1{})
+	createdUserID, err := userRepository.Insert(ctx, User1{
+		Name: "test user 1",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !assert.Equal(t, UserID(1), createdUserID) {
-		return
-	}
+	assert.Equal(t, UserID(1), createdUserID)
 
 	userFromDB, err := userRepository.SelectSingle(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !assert.Equal(t, UserID(1), userFromDB.ID) {
-		return
-	}
+	assert.Equal(t, UserID(1), userFromDB.ID)
 }

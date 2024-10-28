@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"reflect"
+	"strings"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -21,8 +22,7 @@ func NewDBAL(driver Driver, configFuncs ...ConfigFunc) (*DBAL, error) {
 
 	dbal := &DBAL{
 		connection: connection,
-		// logger:     logger,
-		driver: driver,
+		driver:     driver,
 	}
 
 	for _, configFunc := range configFuncs {
@@ -45,7 +45,46 @@ type DBAL struct {
 	postRunFuncs []ConfigPostRunFunc
 }
 
+type tableCreateTargetStruct struct {
+	Table       string `db:"Table"`
+	CreateTable string `db:"Create Table"`
+}
+
 func (dbal *DBAL) AutoMigrate(ctx context.Context, entities []Entity) error {
+	for _, entity := range entities {
+		targetTableDefinition, err := EntityToTable(entity)
+		if err != nil {
+			return err
+		}
+
+		tableCreateTarget := []tableCreateTargetStruct{}
+		if err := dbal.RawSelect(ctx, dbal.driver.ShowCreateTable(entity.EntityInformation().TableName), nil, &tableCreateTarget); err != nil {
+			if !strings.Contains(err.Error(), "42S02") {
+				return err
+			}
+		}
+
+		if len(tableCreateTarget) < 1 {
+			if _, err := dbal.RawExecute(ctx, dbal.driver.CreateTable(targetTableDefinition), nil); err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		currentTableDefinition := dbal.driver.ParseCreateTable(tableCreateTarget[0].CreateTable)
+
+		updateStatements := dbal.diffFunc(targetTableDefinition, currentTableDefinition)
+
+		for _, updateStatement := range updateStatements {
+			if _, err := dbal.RawExecute(ctx, updateStatement, nil); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
 	// destTable := dbal.driver.getCreateSyntax(entities[0].EntityInformation().TableName)
 	// srcTable := TableFromEntity(entities[0])
 	// diff := Diff(destTable, srcTable)
@@ -145,7 +184,24 @@ func (dbal *DBAL) RawExecute(
 		return nil, err
 	}
 
-	return dbal.connection.Exec(preparedQuery, preparedArgs...)
+	for _, preRunFunc := range dbal.preRunFuncs {
+		if err := preRunFunc(ctx, preparedQuery, preparedArgs); err != nil {
+			return nil, err
+		}
+	}
+
+	result, err := dbal.connection.Exec(preparedQuery, preparedArgs...)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, postRunFunc := range dbal.postRunFuncs {
+		if err := postRunFunc(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
 }
 
 func (dbal *DBAL) Ping() error {

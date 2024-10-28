@@ -4,6 +4,8 @@ type Driver interface {
 	DSN() string
 	Driver() string
 
+	ShowCreateTable(tableName string) string
+
 	Insert(entity Entity) (string, map[string]any, error)
 	Delete(entity Entity) (string, map[string]any, error)
 	Save(entity Entity) (string, map[string]any, error)
