@@ -10,11 +10,13 @@ import (
 )
 
 type UserID uint64
+type EmailAddress string
 
 type User1 struct {
 	ID        UserID     `db:"id,primaryKey,autoIncrement"`
 	Name      string     `db:"name"`
-	UpdatedAt *time.Time `db:"updated_at,readOnly"`
+	CreatedAt time.Time  `db:"created_at,readOnly,default=CURRENT_TIMESTAMP"`
+	DeletedAt *time.Time `db:"deleted_at"`
 }
 
 func (u User1) EntityInformation() database.EntityInformation {
@@ -23,8 +25,17 @@ func (u User1) EntityInformation() database.EntityInformation {
 	}
 }
 
-type User1Repository struct {
-	database.Repository[UserID, User1]
+type User2 struct {
+	ID    UserID       `db:"id,primaryKey,autoIncrement"`
+	Name  string       `db:"name"`
+	Email EmailAddress `db:"email_address"` // New column
+	// Missing UpdatedAt
+}
+
+func (u User2) EntityInformation() database.EntityInformation {
+	return database.EntityInformation{
+		TableName: "user",
+	}
 }
 
 func runDriverTestSuite(t *testing.T, dbal *database.DBAL) {
@@ -36,11 +47,10 @@ func runDriverTestSuite(t *testing.T, dbal *database.DBAL) {
 		t.Fatal(err)
 	}
 
-	userRepository := User1Repository{
-		Repository: database.NewRepository[UserID, User1](dbal),
-	}
+	userRepository1 := database.NewRepository[UserID, User1](dbal)
+	userRepository2 := database.NewRepository[UserID, User2](dbal)
 
-	createdUserID, err := userRepository.Insert(ctx, User1{
+	createdUserID, err := userRepository1.Insert(ctx, User1{
 		Name: "test user 1",
 	})
 	if err != nil {
@@ -49,10 +59,31 @@ func runDriverTestSuite(t *testing.T, dbal *database.DBAL) {
 
 	assert.Equal(t, UserID(1), createdUserID)
 
-	userFromDB, err := userRepository.SelectSingle(ctx)
+	userFromDB, err := userRepository1.SelectSingle(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	assert.Equal(t, UserID(1), userFromDB.ID)
+
+	if err := dbal.AutoMigrate(ctx, []database.Entity{
+		User2{},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	userRepository2.Update(ctx, User2{
+		ID:    createdUserID,
+		Name:  "test user 2",
+		Email: "foobar@example.com",
+	})
+
+	userFromDB2, err := userRepository2.SelectSingle(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, UserID(1), userFromDB2.ID)
+	assert.Equal(t, EmailAddress("foobar@example.com"), userFromDB2.Email)
+
 }

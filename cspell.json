@@ -4,6 +4,6 @@
 	"dictionaryDefinitions": [],
 	"dictionaries": [],
 	"words": ["dbal", "lunagic"],
-	"ignoreWords": ["dockertest", "stretchr"],
+	"ignoreWords": ["dockertest", "stretchr", "mattn", "gotest"],
 	"import": []
 }

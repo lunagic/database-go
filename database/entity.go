@@ -1,7 +1,5 @@
 package database
 
-import "reflect"
-
 type EntityInformation struct {
 	TableName  string
 	Indexes    []TableIndex
@@ -24,38 +22,49 @@ type Table struct {
 
 type TableColumn struct {
 	Name          string
-	Type          reflect.Type
+	Type          string
 	AutoIncrement bool
 	PrimaryKey    bool
-	Nullable      string
+	HasDefault    bool
+	Default       string
+	Nullable      bool
 	Index         []TableIndex
 	ForeignKey    *TableForeignKey
 }
 
-func EntityToTable(entity Entity) (Table, error) {
-	table := Table{
-		Name: entity.EntityInformation().TableName,
+func (dbal *DBAL) diffFunc(targetTable Table, currentTable Table) []string {
+
+	currentColumns := map[string]TableColumn{}
+	for _, column := range currentTable.Columns {
+		currentColumns[column.Name] = column
 	}
 
-	loopOverStructFields(reflect.ValueOf(entity), func(fieldDefinition reflect.StructField, fieldValue reflect.Value) {
-		tag := parseTag(fieldDefinition.Tag)
-		if tag.Column == "" {
-			return
+	targetColumns := map[string]TableColumn{}
+	for _, column := range targetTable.Columns {
+		targetColumns[column.Name] = column
+	}
+
+	columnsToAdd := []string{}
+	columnsToDrop := []string{}
+	columnsToAlter := []string{}
+
+	for columnName, column := range currentColumns {
+		if _, found := targetColumns[columnName]; !found {
+			columnsToDrop = append(
+				columnsToDrop,
+				dbal.driver.DropColumn(targetTable, column),
+			)
 		}
+	}
 
-		column := TableColumn{
-			Name:          tag.Column,
-			AutoIncrement: tag.AutoIncrement,
-			Type:          fieldDefinition.Type,
-			PrimaryKey:    tag.PrimaryKey,
+	for columnName, column := range targetColumns {
+		if _, found := currentColumns[columnName]; !found {
+			columnsToAdd = append(
+				columnsToAdd,
+				dbal.driver.AddColumn(targetTable, column),
+			)
 		}
+	}
 
-		table.Columns = append(table.Columns, column)
-	})
-
-	return table, nil
-}
-
-func (dbal *DBAL) diffFunc(a Table, b Table) []string {
-	return []string{}
+	return append(columnsToDrop, append(columnsToAdd, columnsToAlter...)...)
 }

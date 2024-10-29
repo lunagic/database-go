@@ -52,6 +52,8 @@ type dbalTag struct {
 	ReadOnly                bool
 	AutoIncrement           bool
 	PrimaryKey              bool
+	Default                 string
+	HasDefault              bool
 }
 
 func parseTag(tagString reflect.StructTag) dbalTag {
@@ -81,6 +83,11 @@ func parseTag(tagString reflect.StructTag) dbalTag {
 			tag.AutoIncrement = true
 
 			continue
+		}
+
+		if strings.HasPrefix(part, "default=") {
+			tag.Default = strings.TrimPrefix(part, "default=")
+			tag.HasDefault = true
 		}
 	}
 

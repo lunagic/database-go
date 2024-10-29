@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 )
 
@@ -24,7 +25,12 @@ func WithPostRunFunc(postRunFunc ConfigPostRunFunc) ConfigFunc {
 func WithLogger(logger *log.Logger) ConfigFunc {
 	return func(dbal *DBAL) error {
 		dbal.preRunFuncs = append(dbal.preRunFuncs, func(ctx context.Context, statement string, args []any) error {
-			logger.Printf("DBAL Run: %s %v", statement, args)
+			argJSON, err := json.Marshal(args)
+			if err != nil {
+				return err
+			}
+
+			logger.Printf("DBAL Run: %s %s", statement, string(argJSON))
 
 			return nil
 		})

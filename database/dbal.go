@@ -52,10 +52,7 @@ type tableCreateTargetStruct struct {
 
 func (dbal *DBAL) AutoMigrate(ctx context.Context, entities []Entity) error {
 	for _, entity := range entities {
-		targetTableDefinition, err := EntityToTable(entity)
-		if err != nil {
-			return err
-		}
+		targetTableDefinition := dbal.driver.TableFromEntity(entity)
 
 		tableCreateTarget := []tableCreateTargetStruct{}
 		if err := dbal.RawSelect(ctx, dbal.driver.ShowCreateTable(entity.EntityInformation().TableName), nil, &tableCreateTarget); err != nil {
@@ -73,6 +70,7 @@ func (dbal *DBAL) AutoMigrate(ctx context.Context, entities []Entity) error {
 		}
 
 		currentTableDefinition := dbal.driver.ParseCreateTable(tableCreateTarget[0].CreateTable)
+		currentTableDefinition.Name = targetTableDefinition.Name // TODO: remove this
 
 		updateStatements := dbal.diffFunc(targetTableDefinition, currentTableDefinition)
 
