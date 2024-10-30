@@ -2,11 +2,10 @@ package database_test
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/lunagic/database-go/database"
+	"github.com/lunagic/database-go/database/internal/tester"
 )
 
 func Test_DriverSQLite(t *testing.T) {
@@ -14,7 +13,7 @@ func Test_DriverSQLite(t *testing.T) {
 		database.DriverSQLite{
 			Path: fmt.Sprintf("%s/database.sqlite", t.TempDir()),
 		},
-		database.WithLogger(log.New(os.Stdout, "", log.LstdFlags)),
+		database.WithLogger(tester.Logger(t)),
 	)
 	if err != nil {
 		t.Fatal(err)

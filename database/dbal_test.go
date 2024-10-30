@@ -2,13 +2,13 @@ package database_test
 
 import (
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"strconv"
 	"testing"
 
 	"github.com/lunagic/database-go/database"
+	"github.com/lunagic/database-go/database/internal/tester"
 	"github.com/ory/dockertest/v3"
 )
 
@@ -18,6 +18,7 @@ func getDockerDBAL(
 	resourceGetter func(pool *dockertest.Pool) (*dockertest.Resource, error),
 	driverGetter func(host string, port int) database.Driver,
 ) *database.DBAL {
+	t.Helper()
 	if testing.Short() {
 		t.Skip("Skipping long-running test in short mode.")
 	}
@@ -64,7 +65,7 @@ func getDockerDBAL(
 
 	if err := pool.Retry(func() error {
 		var err error
-		db, err = database.NewDBAL(driverGetter(u.Hostname(), port), database.WithLogger(log.New(os.Stderr, "", log.LstdFlags)))
+		db, err = database.NewDBAL(driverGetter(u.Hostname(), port), database.WithLogger(tester.Logger(t)))
 		if err != nil {
 			return err
 		}
@@ -73,8 +74,6 @@ func getDockerDBAL(
 	}); err != nil {
 		t.Fatalf("Could not connect to database: %s", err)
 	}
-
-	t.Log("Starting test")
 
 	return db
 }
