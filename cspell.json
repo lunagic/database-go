@@ -1,0 +1,16 @@
+{
+	"version": "0.2",
+	"ignorePaths": ["go.sum", "go.mod", "Makefile"],
+	"dictionaryDefinitions": [],
+	"dictionaries": [],
+	"words": ["dbal", "lunagic"],
+	"ignoreWords": [
+		"dockertest",
+		"stretchr",
+		"mattn",
+		"gotest",
+		"dbname",
+		"sslmode"
+	],
+	"import": []
+}
