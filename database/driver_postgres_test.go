@@ -17,6 +17,11 @@ func Test_DriverPostgres_16(t *testing.T) {
 	testDriverPostgres(t, "16")
 }
 
+func Test_DriverPostgres_15(t *testing.T) {
+	t.Parallel()
+	testDriverPostgres(t, "15")
+}
+
 func testDriverPostgres(t *testing.T, version string) {
 	t.SkipNow() // TODO: remove this for once driver is implemented
 	runDriverTestSuite(

@@ -10,7 +10,6 @@ import (
 func Test_DriverMySQL_11_4(t *testing.T) {
 	t.Parallel()
 	testDriverMySQL(t, "11.4")
-	t.Fail()
 }
 
 func Test_DriverMySQL_10_11(t *testing.T) {

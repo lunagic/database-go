@@ -16,6 +16,7 @@ type DriverSQLite struct {
 func (driver DriverSQLite) Driver() string {
 	return "sqlite3"
 }
+
 func (driver DriverSQLite) DSN() string {
 	return fmt.Sprintf("file:%s?cache=shared", driver.Path)
 }

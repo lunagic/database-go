@@ -43,6 +43,7 @@ type tableCreateTargetStruct struct {
 func (dbal *DBAL) AutoMigrate(ctx context.Context, entities []Entity) error {
 	for _, entity := range entities {
 		targetTableDefinition := dbal.driver.TableFromEntity(entity)
+		// validate  - have index for column that does exist
 
 		tableCreateTarget := []tableCreateTargetStruct{}
 		if err := dbal.RawSelect(ctx, dbal.driver.ShowCreateTable(entity.EntityInformation().TableName), nil, &tableCreateTarget); err != nil {
