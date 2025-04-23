@@ -1,11 +1,12 @@
 # System
 .DS_Store
 
-# Temporary
+# Temporary Files
 /tmp/
 
 # Secrets
-/.env*local
+.env.local
+.env.*.local
 
 # Go
-__debug_bin
+__debug_bin*
