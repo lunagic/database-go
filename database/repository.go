@@ -26,7 +26,7 @@ func (q *Repository[ID, T]) GetByID(ctx context.Context, id ID) (T, error) {
 }
 
 func (q *Repository[ID, T]) Insert(ctx context.Context, entity T) (ID, error) {
-	statement, parameters, err := q.Selector.dbal.driver.Insert(entity)
+	statement, parameters, err := q.dbal.driver.Insert(entity)
 	if err != nil {
 		return 0, err
 	}
@@ -58,7 +58,7 @@ func (q *Repository[ID, T]) Update(ctx context.Context, entity T) error {
 }
 
 func (q *Repository[ID, T]) Save(ctx context.Context, entity T) error {
-	statement, parameters, err := q.Selector.dbal.driver.Save(entity)
+	statement, parameters, err := q.dbal.driver.Save(entity)
 	if err != nil {
 		return err
 	}

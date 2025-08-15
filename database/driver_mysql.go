@@ -295,11 +295,12 @@ func (driver DriverMySQL) columnToString(t TableColumn) string {
 	}
 
 	if t.HasDefault {
-		if t.Default == "NULL" {
+		switch t.Default {
+		case "NULL":
 			column = fmt.Sprintf("%s DEFAULT NULL", column)
-		} else if t.Default == "CURRENT_TIMESTAMP" {
+		case "CURRENT_TIMESTAMP":
 			column = fmt.Sprintf("%s DEFAULT CURRENT_TIMESTAMP", column)
-		} else {
+		default:
 			column = fmt.Sprintf("%s DEFAULT '%s'", column, t.Default) // TODO: need to make sure we escape single quotes
 		}
 	} else if t.Type == "text" && !t.Nullable {
